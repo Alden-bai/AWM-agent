@@ -1,0 +1,6 @@
+【规范化输入与已提取义务】
+本轮输入由task、public_contracts、schemas、citation_catalog、non_normative_examples、tool_inventory、evidence_context、quality_policy和obligation_plan组成。public_contracts保留所有非example契约属性；示例集中在non_normative_examples，不能当真实数据或默认值。sources原文已冻结在离线文件中，输出source_id沿用citation_catalog的source_id，quote仅逐字复制catalog里的quote，不能复制规范化JSON片段。完整题面也是可引用来源。
+obligation_plan是另一阶段根据当前题面提取的待核查清单，不是额外业务政策。逐项核对来源，修正无依据解释，确保每项真正进入业务谓词P。coverage的interpretation必须用[O01]这样的标记指明覆盖的义务ID，每个义务至少映射一条；不增加五字段或根对象字段。歧义保留在unresolved并明确影响条目。
+G以“证据完整到足以判断是否发生……”表达，不能写成“已存在调用/正确结果/合法JSON”。即使对象不存在或操作未发生，也可以证据完整。将所有业务成功条件留在P，包括实际动作、所属用户、对象关联、范围完整、排序时点、先后顺序、条件执行机制和输出交付。
+同一对象上的依赖要求可合并为存在同一个对象同时满足全部属性；分条时必须共享明确绑定，不能各条任取对象。比较和集合定义在P内写完整；G不能预先要求候选结果正确或齐全，G只要求可取得用于比较的完整参照证据。不要从缺少目标推断缺少证据。
+以固定五字段模板返回一份完整rubric。不要输出义务清单或自测结果；独立测试将在生成后进行。

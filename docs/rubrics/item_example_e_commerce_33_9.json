@@ -1,0 +1,98 @@
+{
+  "schema_version": "awm-rubric-v1-draft",
+  "rubric_version": "0.1.0",
+  "status": "draft",
+  "example_scope": "single_item_only_not_complete_task_rubric",
+  "task": {
+    "dataset_version": "awm-dde80a0",
+    "scenario": "e_commerce_33",
+    "native_task_id": 9,
+    "task_id": "e_commerce_33:9",
+    "task_text": "Search for 'LEGO Star Wars Millennium Falcon', open the product with the highest number of customer reviews, and post a 5-star review with the title 'Amazing build quality' and body text 'Took a full weekend to build and was worth every minute.'",
+    "task_text_sha256": "aea46bd44dfdfae9f5fb9f9a20ee33efc935a668820be16abe7b92e12ff37417",
+    "source": {
+      "artifact": "data/awm-dde80a0/gen_tasks.jsonl",
+      "line": 1,
+      "selector": "scenario=e_commerce_33; tasks[9]"
+    },
+    "initial_state_hash": null,
+    "environment_code_hash": null,
+    "tool_schema_hash": null
+  },
+  "items": [
+    {
+      "id": "R08",
+      "criterion": "本次发布的同一条目标商品评论，其正文等于题面给定文本。",
+      "sources": [
+        {
+          "kind": "task",
+          "artifact": "data/awm-dde80a0/gen_tasks.jsonl",
+          "selector": "scenario=e_commerce_33; tasks[9]",
+          "quote": "body text 'Took a full weekend to build and was worth every minute.'"
+        }
+      ],
+      "requirement_level": "required",
+      "aspect": "outcome",
+      "target": "R05 绑定的本次新建评论 review_id；不得另选一条满足正文的历史评论",
+      "applies_when": "always",
+      "depends_on": [
+        "R05"
+      ],
+      "evidence": [
+        {
+          "kind": "bound_object",
+          "ref": "R05.review_id",
+          "purpose": "确定同一评论",
+          "required": true
+        },
+        {
+          "kind": "final_db",
+          "ref": "product_reviews[id=R05.review_id].body",
+          "purpose": "核验实际保存的正文",
+          "required": true
+        }
+      ],
+      "decision": {
+        "method": "deterministic",
+        "check_ref": null,
+        "check_spec": "目标评论唯一绑定后，将末态 product_reviews.body 与 expected_value 精确比较；若 R05 已凭完整证据证明没有创建评论，本项 violated。",
+        "operator": "equals",
+        "expected_value": "Took a full weekend to build and was worth every minute.",
+        "normalization": "保留大小写、标点和内部空白；JSON 转义按解析后的字符串比较",
+        "satisfied_when": "同一目标评论存在且正文等于 expected_value",
+        "violated_when": "证据完整且正文不同、为空，或已证明没有创建目标评论",
+        "unknown_when": "快照缺失、对象无法可靠绑定、证据冲突或检查器错误",
+        "not_applicable_when": "never"
+      },
+      "validation": {
+        "status": "not_run",
+        "positive_case_refs": [],
+        "negative_case_refs": [],
+        "unknown_case_refs": []
+      },
+      "unresolved": []
+    }
+  ],
+  "coverage": {
+    "status": "partial_example",
+    "omitted_items": [
+      "R01",
+      "R02",
+      "R03",
+      "R04",
+      "R05",
+      "R06",
+      "R07"
+    ]
+  },
+  "unresolved": [
+    "补齐全部条目及其依赖",
+    "绑定实际初态、环境和工具版本",
+    "实现并验证检查器与正反例后再冻结"
+  ],
+  "aggregation": {
+    "policy": "required-gate-v1",
+    "required": "任一可靠 violated 则 fail；否则任一 unknown 则 review；否则所有适用 required satisfied 则 pass；执行完整性无效时 invalid；不得空集自动通过",
+    "quality": "独立报告，不抵消 required，不自动映射到 reward"
+  }
+}

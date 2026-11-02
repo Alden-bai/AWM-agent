@@ -1,0 +1,9 @@
+title = "AWM-agent secret scanning"
+
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Environment variable identifier, not a credential value"
+regexTarget = "secret"
+regexes = ['''^RUBRIC_V12_DEEPSEEK_KEY$''']

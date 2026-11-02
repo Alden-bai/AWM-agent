@@ -1,0 +1,7 @@
+ID命名空间补充（不改变业务标准或输出schema）：
+- candidate_ids和selection.candidate_id只能使用输入candidates中的实际ID，例如C01。
+- contract_ref_ids只能使用public_contracts中description/summary实际提供的ref_id，例如K0001。
+- evidence[].source_id只能使用输入候选、public_contracts或schemas对象上实际提供的source_id，或null；例如实际存在的contract:create_note、schema:notes、task。不得把K0001或C01放入source_id，也不得猜造来源ID。
+- 如果知道契约ref_id，需要找到承载该ref_id的public_contracts对象，并使用其source_id。K/C是引用片段或候选的ID，不是来源文档的ID。
+- 没有可绑定的具体来源时可填null，但仍须具体说明记录、字段、关联、范围、时点及完整性；不能把null用于掩盖不存在的字段或证据。
+- 不修改原题、候选quote、原文offset或来源内容。修订的是候选的解释和映射，以及rubric内容，不是改写候选原文。

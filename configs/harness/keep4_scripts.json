@@ -1,0 +1,27 @@
+{
+  "it_service_management_itsm_1:1": [
+    {"type": "list_tools"},
+    {"type": "call_tool", "name": "create_incident", "arguments": {"category": "network", "impact_level": "high", "short_description": "All users on the 3rd floor at London Office cannot connect to the corporate Wi-Fi SSID FIELD-FIX since 09:10 AM GMT"}},
+    {"type": "call_tool", "name": "list_incidents", "arguments": {"category": "network", "lifecycle_status": "logged", "limit": 100}},
+    {"type": "finish", "answer": "Submitted the incident and queried incidents with lifecycle_status logged. This is a scripted engineering smoke run."}
+  ],
+  "social_networking_8:0": [
+    {"type": "list_tools"},
+    {"type": "call_tool", "name": "create_post", "arguments": {"content": "Excited to start 2025 by learning web automation and building my first side project! #NewYear #Coding", "audience": "Friends"}},
+    {"type": "call_tool", "name": "list_my_posts", "arguments": {"limit": 100}},
+    {"type": "finish", "answer": "Created the requested Friends post and queried my posts. This is a scripted engineering smoke run."}
+  ],
+  "education_training_management_1:8": [
+    {"type": "list_tools"},
+    {"type": "call_tool", "name": "get_competency", "arguments": {"competency_id": 340}},
+    {"type": "call_tool", "name": "update_competency", "arguments": {"competency_id": 340, "level": "intermediate", "category": "pipefitting", "short_description": "Install and test residential copper and PEX water lines"}},
+    {"type": "call_tool", "name": "get_competency", "arguments": {"competency_id": 340}},
+    {"type": "finish", "answer": "Updated competency 340 and read it back. This is a scripted engineering smoke run."}
+  ],
+  "e_commerce_10:7": [
+    {"type": "list_tools"},
+    {"type": "call_tool", "name": "get_sku_by_code", "arguments": {"sku_code": "WHEY-ISOLATE-CHOC-2LB"}},
+    {"type": "call_tool", "name": "create_review", "arguments": {"sku_code": "WHEY-ISOLATE-CHOC-2LB", "rating": 5, "review_text": "Great taste, mixes easily, and no stomach issues even with my lactose sensitivity", "status": "pending"}},
+    {"type": "finish", "answer": "Submitted the requested 5-star review with pending moderation status. This is a scripted engineering smoke run."}
+  ]
+}

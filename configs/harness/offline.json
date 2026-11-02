@@ -1,0 +1,10 @@
+{
+  "isolation": "strict",
+  "purpose": "development",
+  "actor": "scripted",
+  "judge": "mock",
+  "max_physical_requests": 0,
+  "max_total_tokens": 0,
+  "workers": 1
+}
+

@@ -1,0 +1,27 @@
+{
+  "isolation": "strict",
+  "purpose": "development",
+  "actor": "api",
+  "judge": "api",
+  "actor_api": {
+    "base_url": "https://cn-beijing.maas.qianwenaiapi.com/compatible-mode/v1",
+    "model": "qwen3.5-flash",
+    "api_key_env": "DASHSCOPE_API_KEY",
+    "max_tokens_alias": true,
+    "enable_thinking": false,
+    "context_limit": 128000
+  },
+  "judge_api": {
+    "base_url": "https://cn-beijing.maas.qianwenaiapi.com/compatible-mode/v1",
+    "model": "qwen3.5-flash",
+    "api_key_env": "DASHSCOPE_API_KEY",
+    "max_tokens_alias": true,
+    "enable_thinking": false,
+    "context_limit": 128000
+  },
+  "context_limit": 128000,
+  "max_output_tokens": 4096,
+  "safety_margin": 512,
+  "max_physical_requests": 0,
+  "max_total_tokens": 0
+}

@@ -1,0 +1,7 @@
+{
+  "*": [
+    {"type": "list_tools"},
+    {"type": "finish", "answer": "Offline harness discovery smoke test only; the requested task was not performed."}
+  ]
+}
+

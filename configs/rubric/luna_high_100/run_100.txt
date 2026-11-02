@@ -1,0 +1,39 @@
+请在 /home/bjx/awm-agent 中完成一次100题rubric生成试跑。总题库有10000题，本次只运行100题，不自动推广到全量。此前10题已达到首次70%、最终80%、累计2408722子agent tokens；该结果仅作历史对比，不把旧答案或反馈提供给新模型，也不把80%设为强制通过目标。
+
+一、职责与运行配置
+你是调度和代码执行者，只负责输入准备、程序校验、调用、存储及统计。你不得对生成的rubric做语义审查、打分、手工改写或增加第三道验收门槛。rubric语义判断只由下述独立模型负责。
+生成、审查和修订均实际使用model=gpt-5.6-luna、reasoning_effort=high，不使用Qwen或DeepSeek。使用Codex子agent时显式设置fork_turns=none，每题每阶段独立创建上下文；不能复用一个审查会话连续评多题。模型不可用时明确报告并停止，不悄悄换模型。
+不设置人为单次上下文上限，仍遵守平台实际限制并准确记录截断或调用失败。本轮没有指定累计token预算；历史skill中的其他试验预算不作为本轮授权。不要把估算当实际用量。最多3个子agent同时运行，或使用当前环境允许的更低并发；不得由子agent继续派生agent。
+
+二、先进行确定性的代码与输入检查（不调用模型审查）
+复用scripts/rubric_candidates.py中的提取、来源绑定和编译思路，以及scripts/rubric_qwen_v13.py的evaluate无0通过规则。不要直接采用rubric_candidates.evaluate_scores的旧eligible/review口径。
+先阅读docs/rubric_candidate_code_audit_zh.md及scripts/audit_rubric_candidates.py。旧代码已有可复现的JSON转义描述、example同名参数、重复描述offset问题；请在独立新版本中修复并增加针对性回归测试，保留历史试跑代码和产物不变。智能引号/引号内撇号的分段也需保护，完整题面始终保留。不将原文改写成更容易引用的文本。
+来源预处理失败时保留原题并记录失败，不猜造来源、不悄悄剔除样本、不把技术错误转成语义通过。代码只负责文本完整性、ID、JSON、schema、引用、双向映射和计分等确定性检查，不评价业务语义。
+原rubric_luna56_lean_run.py是10题专用脚本，包含固定路径、数量和报告分母，不能把路径替换后直接当100题runner。准备通用runner，以冻结manifest中的样本数量为所有统计的分母。
+
+三、冻结100题输入
+从data/awm-dde80a0/gen_tasks.jsonl展开scenario:index作为唯一task_id，按ID排序后用固定随机种子20261024无放回抽样100题。生成前冻结task_id、原题及来源哈希、抽样方法、模型配置、prompt完整文本与哈希。已经选入的失败题不换题、不从分母删除；断点续跑使用原manifest。
+按scenario关联gen_spec.jsonl与gen_db.jsonl。不要沿用旧10题手工SELECTION作为100题的工具筛选规则。保留完整题面、词法候选、公开接口契约、工具清单和数据库DDL；排除数据库行数据、私有参考答案、历史rubric与执行轨迹。若无已验证的来源筛选器，使用该环境完整公开契约与DDL；只删除被确认是示例元数据的内容，不删除名为example/examples的真实业务参数或字段。
+所有原始来源冻结在本地；发送给模型的压缩视图必须可回溯到原文。若压缩来源，保持原文引用、真实属性和语义，记录压缩方法。与旧10题使用的手工契约节选不同之处必须在报告中注明。
+
+四、逐题流水线
+A. 代码提取候选并绑定原文。词法候选不是最终业务义务，不在代码中猜测硬要求/质量偏好。
+B. 全新生成agent读取本题输入包，使用configs/rubric/luna_high_100/generate.txt完成筛选、去重、分类和中间JSON生成。包内execution使用同目录execute.txt。要求所有候选都有去向、双向映射一致；原文引用及固定判定文字交由代码装配。
+C. 代码检查JSON、ID命名空间、映射和引用，装配每条rubric的五个业务字段：criterion、sources、requirement_level、evidence、decision；id仅用于定位。保持现有顶层task_id、rubric、coverage、unresolved格式。
+D. 代码检查有效后，创建全新的审查agent，使用configs/rubric/luna_high_100/judge.txt。审查输入只有完整题面、公开来源、候选和当前五字段rubric（含覆盖映射），不含生成思考、旧评分、旧版本或修订意见。
+E. 五维为source_support、coverage、requirement_classification、evidence_design、decision_logic，每维必须是整数0/1/2且格式合法。没有0分即通过，1分允许通过；不以总分抵消0分。通过立即保留，不再生成。
+F. 生成结构失败或合法审查出现0分时，最多进行一轮修订：新修订agent只接收本题完整来源、上一版输出及明确错误反馈，使用configs/rubric/luna_high_100/revise.txt。修订反馈应给出错误字段路径、实际值及合法来源ID列表，例如解释K0001不能作为evidence.source_id，不要只给invalid_evidence这样的笼统代码。结构修订同样消耗唯一一轮额度，不能随后再进行第二轮语义修订。
+G. 修订版再次经过代码检查；有效才交给另一个全新审查agent。复审看不到旧反馈。仍有0分或结构仍无效时，保留原题及失败版本，不加入通过集合；不再修订。
+H. 审查输出格式无效、缺失维度或调用失败时记录invalid_judge/call_failed，不假定通过，也不把无法解读的内容当作合法语义反馈。若模型调用已发生且用量不明，不自动重发。隔离单题失败继续其余样本；确定性前置错误在调用前修复不消耗模型修订轮次。
+
+五、控制重复上下文与结果输出
+子agent只接收单题单阶段的完整输入包，使用execute.txt约束一次读取、一次提交；不读取整个manifest、历史报告或全部题库。项目技能由调度端处理，不要求每个子agent重新读技能或探索仓库。不要把本调度prompt整体复制给每个子agent。
+业务prompt保留必要规则，输出只保留业务schema，不要求解释思考过程。审查理由和反例具体简短，已通过题不改写。完整响应按task_id、阶段、版本、模型配置、输入与prompt哈希缓存；仅复用身份完全相同的请求结果，不以旧prompt或旧模型结果充当本次新结果。
+每题保留原题引用、候选与offset、生成中间JSON、编译rubric、审查JSON、修订触发原因、各版本和状态。生成、修订、审查输出各自分目录，不覆盖。原题始终保留。
+
+六、实际token核算与交付
+记录每个唯一子agent线程的模型、high设置、task_id、阶段和实际usage。最终累计usage每线程只计一次；不要对多个累计快照求和。若有逐响应usage，以唯一response_id去重求和并与累计值核对。
+分别汇总输入token（含缓存）、缓存输入、非缓存输入、输出token（含思考）、思考子项、总token、模型响应次数、工具调用次数。缓存是输入的子项，思考是输出的子项，不重复加算。所有失败和修订消耗都计入；未知用量单列。主调度agent用量如能取得则单列，不混入与旧10题子agent口径的对比。不凭未验证的模型单价推算人民币费用。
+最终报告：首次通过数/100、最终通过数/100、进入修订的题数、修订后新增通过数、各失败类型、总token、每道原题平均token、每份通过rubric平均token（包含所有失败成本）、四阶段用量。通过数为0时每份通过版成本记为未定义。
+与旧10题报告runs/rubric_luna56_lean_10_20261024/report_zh.md对比每题和每份通过版的token，勿直接比较100题与10题的总量后宣称节省。注明样本、来源准备及prompt补充规则有变化，不能把审查通过率当成人工准确率。
+交付冻结manifest、逐题结果、通过版rubric、全部失败记录、实际usage明细和中文汇总。完成100题后停止，不自动运行剩余9900题。不要求主调度模型额外复核rubric语义。

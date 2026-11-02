@@ -1,0 +1,66 @@
+请在 /home/bjx/awm-agent 中实际执行一次额外新增2900题的rubric生成，并将其与已经完成的1100题登记在同一个runs/rubric_luna_registry/中。本次2900题不包含此前1100题，三个批次合计4000道不同原题。只运行本次冻结样本，完成后停止，不自动推广到剩余题库。
+
+一、历史范围与本批身份
+历史两个批次：
+1. runs/rubric_luna_high_100_20261024/：100题，首次通过72，最终通过91，修订28，修订新增通过19，失败9；Luna实测9,666,770 tokens。
+2. runs/rubric_luna_high_1000_batch01/：1000题，首次通过664，最终通过903，修订333，修订新增通过239；失败97，其中rejected 93、invalid_generation 1、invalid_judge 3；Luna实测101,319,125 tokens。
+以上是核对线索，以原始可验证文件为准。目前1100题全部终态、994题通过、106题未通过，累计Luna实测110,985,895 tokens。“已有rubric”不等于全部审查通过。
+先核对两个批次manifest及执行修订链、results、retention_manifest、accepted_manifest、usage、scheduler_usage、report和统一登记；只核对身份、哈希、状态、实际用量，不做语义复核。所有历史原始文件只读保留。历史通过、失败均作为已处理题排除，不重跑失败题来凑新增数量，不把历史结果塞进新题模型上下文。
+新批次固定run_id=rubric_luna_high_2900_batch02；目录runs/rubric_luna_high_2900_batch02/；启动提示词configs/rubric/luna_high_2900/run_2900.txt。已有同目录时识别同批断点，不覆盖、不重新抽样、不换run_id。按真实时刻记录开始、结束。
+
+二、统一登记、占位与防重复
+复用runs/rubric_luna_registry/作为唯一权威入口，不另建平行登记。batches.json按run_id登记；tasks.jsonl每个(dataset_id,task_id,run_id)一条；events.jsonl追加状态历史；README.md和report_zh.md说明查询、续跑与累计口径。
+批次记录包含dataset_id、数据文件哈希、模型/effort、seed、样本数、状态、开始结束时间、manifest路径及哈希、执行修订链、报告路径、Luna实测用量、主调度快照及截止时间、未知项。逐题记录包含scenario:index、原题及来源哈希、批次、状态、最后完成阶段、是否实际调用、首审/复审引用、修订次数、最终版/通过版引用、错误、usage引用及更新时间。区分reserved、running、passed、rejected、preparation_failed、invalid_generation、invalid_judge、call_failed、usage_unknown。
+历史1100题逐条关联已有原题、终态、通过产物和实际用量；已有登记仅验证或幂等补齐，不重复导入或累计tokens。登记与原manifest不一致、样本身份冲突或跨批重复必须在抽样和调用前解决，不猜造。
+同dataset_id下所有历史题、失败题和其他批次占位题均排除；续跑只恢复本manifest。数据哈希变化需显式核对，不能借新dataset_id重新计新增覆盖。登记、抽样、占位使用锁和原子写入。2900个样本在任何模型调用前冻结并全部登记reserved；中断保留占位。可从事件及批次原始记录重建索引。
+
+三、职责、模型与运行方式
+你是调度和代码执行者，只负责输入准备、确定性程序校验、调用、存储、登记及统计。不得对rubric做语义审查、打分、手工改写或增加第三道验收门槛。语义判断只由独立Luna模型负责。
+生成、审查、修订、复审均实际使用model=gpt-5.6-luna、reasoning_effort=high。每题每阶段独立全新上下文，不复用审查会话连续评多题。优先复用100题已经验证的CLI全新会话消息模式；如果采用协作子agent，必须fork_turns=none并显式设置模型和effort。不得由子agent继续派生agent。核验实际记录，模型不可用时明确报告并停止，不换模型。
+最多3个模型会话并发，或当前环境允许的更低并发。不设置人为单次上下文上限，但遵守平台限制并记录截断和失败。本轮未指定累计token上限，不把历史技能预算套用到本轮，也不把估算当实际消耗。
+按已完成1000题每题101,319.125 Luna tokens线性外推，新增2900题约293,825,462.5 Luna tokens，仅为粗估，不含新主调度且不是硬上限或实际账单。只完成已授权的2900题，不因预算未用尽追加题目，不保证固定通过率。
+
+四、离线检查与独立入口
+保留scripts/rubric_luna_batch.py及其历史实现哈希不变，使用独立scripts/rubric_luna_batch02.py复用已验证的来源处理、编译、单次修订、全新审查、缓存和记账流程。参数化启动提示词路径，冻结正确的run_2900.txt，不能将旧1000题调度提示词冒充本批提示词。样本数、分母和统计来自manifest，不写死成100或1000。
+读取docs/rubric_candidate_code_audit_zh.md；保留JSON转义、example/examples业务字段、重复描述offset、智能引号和撇号保护。不改写原题，不用旧eligible/review评分口径。代码只做JSON/schema、ID、引用、双向映射、合法整数评分等确定性检查，不评价业务语义。
+运行既有相关回归测试，并离线验证两批排重、登记幂等、冻结续跑、正确启动提示词冻结、崩溃恢复、用量去重和动态分母；不得用模型输出测试接线。模型会话的业务prompt沿用原冻结版，不新增第三道验收门槛。
+
+五、冻结新增2900题和业务提示词
+数据来源为data/awm-dde80a0/gen_tasks.jsonl、gen_spec.jsonl、gen_db.jsonl。展开scenario:index作为task_id，验证原始总数与ID唯一性。按字符串task_id排序，排除统一登记中已处理或已占位的题，再使用Python random.Random(20261025).sample(eligible_ids, 2900)无放回抽样。本次已有历史1100题，应从剩余8900题抽2900题；有其他登记则据实计算。不足2900题时停止并报告，不重复补题。
+冻结完整候选总体/可抽样ID清单或可验证快照、排除集合及哈希、抽样算法与seed、task_id顺序、完整原题、来源与文件哈希、模型配置、程序版本哈希、全部prompt文本与哈希。确认2900个新ID唯一且与历史1100题无交集。已选入题即使预处理或调用失败也不换题、不从分母删除。
+业务提示词以历史100题运行目录runs/rubric_luna_high_100_20261024/prompts/实际冻结的generate.txt、judge.txt、revise.txt、execute.txt、id_rules.txt为准，逐字复制到新批次prompts目录并核对哈希；本启动提示词另存并冻结。configs/rubric/luna_high_100/仅作核对入口，存在差异时不能悄悄改用新内容。除必要的非业务路径适配并记录差异外，不修改生成/审查/修订的业务规则，不通过精简业务上下文改变本轮口径。
+按scenario关联公开接口契约、工具清单和数据库DDL；保留完整题面、词法候选及原文定位。排除数据库行数据、私有参考答案、历史rubric和执行轨迹。沿用100题完整公开契约与DDL的输入方式，不使用旧10题手工接口节选。压缩视图必须可追溯到冻结原文，记录压缩方法，不丢真实属性或语义。
+来源预处理失败时保留原题并记录preparation_failed，不猜造来源、不剔除样本、不当作语义通过。
+
+六、逐题流水线：最多一次修订，修订后必须复审
+A. 代码提取词法候选并绑定原文；不在代码中推断业务硬要求或质量偏好。
+B. 全新生成会话读取本题完整输入包，按冻结generate.txt及execute.txt筛选、去重、分类并输出中间JSON。候选都有去向、双向映射一致；原文引用和固定判定文字由代码装配。
+C. 代码验证JSON、ID命名空间、映射和引用，编译五业务字段criterion、sources、requirement_level、evidence、decision；id只用于定位。保持task_id、rubric、coverage、unresolved顶层格式。
+D. 代码有效后交全新审查会话，按冻结judge.txt审查。输入只有完整题面、公开来源、候选、当前五字段rubric及覆盖映射，不含生成思考、历史评分、旧版本或修订意见。
+E. 五维source_support、coverage、requirement_classification、evidence_design、decision_logic必须均为合法整数0/1/2。全部无0即通过，1允许通过，总分不能抵消0。通过立即保存并登记，不再生成。
+F. 生成结构失败或合法审查有0分时，最多修订一次。全新修订会话按冻结revise.txt接收本题完整来源、上一版及明确错误反馈。结构反馈给出字段路径、实际值和合法来源ID，不只给笼统错误码；结构修订也消耗唯一额度，不能之后再语义修订。
+G. 修订版先经过代码校验，合法后必须交另一个全新审查会话复审。复审不知道旧评分、旧版本或修订反馈。全部无0才通过；仍有0或结构无效则保留失败版本，结束该题，不进行第二轮修订。
+H. 审查格式无效、缺维度或调用失败，分别记录invalid_judge/call_failed；不能假定通过或伪造反馈。隔离单题失败继续其他题；模型整体不可用则停止派发并保留断点。确定性调用前错误可离线修正，不消耗修订额度。
+
+七、续跑、缓存与调度开销
+以(run_id, task_id, 阶段, 版本, 模型配置, 完整输入哈希, prompt哈希)识别请求，保存请求和原始响应、thread_id/response_id及实际usage。仅复用完全匹配请求。发送前持久化请求身份，收到响应后立即持久化，再做解析、汇总和状态更新。
+续跑先恢复已有响应和状态，已经完成的阶段不重发，已经通过或终态失败的题不重跑；阶段响应已落盘但解析/记账失败时离线恢复，不重新生成。确已调用但响应或用量不明时标记待核对，不自动重试；只有有证据证明未发生模型调用的启动错误才可在修正后重新启动。
+每个模型会话只接收本题本阶段需要的信息，不读取整批manifest、历史报告或题库，不复制本调度提示词；由调度端处理技能和登记。保持100题的一次提交消息模式与简短业务输出，不要求输出思考过程。
+使用持久化runner队列自动流转2900题，保存紧凑progress.json。主调度只读取完成数、通过数、失败类型、阶段用量和异常摘要，不逐题读取大段日志或rubric，不反复加载全量记录；可按每新增50个终态题汇总进度。遵守当前交互环境的更新要求，但更新不必反复扫描历史完整输出。用量汇总优先增量处理新记录，最终再全量核对一次。
+每题保存原题、来源、候选和offset、生成中间JSON、编译rubric、审查JSON、错误反馈、修订触发原因、全部版本、最终状态和usage。阶段分目录，原始响应不覆盖。
+
+八、实际用量与最终交付
+每个唯一线程只计最后累计usage一次，有逐response_id用量时去重求和核对。生成、首审、修订、复审以及失败和预检全部计入；额外预检单列。input_tokens包括缓存，output_tokens包括思考；cached_input_tokens与reasoning_output_tokens为子项，不再加总。另报noncached_input_tokens、total_tokens、响应数、工具调用数和未知用量；未知不能填0。恢复缓存、索引导入和报告重建不重复计费。
+Luna与主调度分账。主调度注明模型、截止时间、快照性质；跨批共用线程按可核对响应或起止差值归属，不能各批重复加整个线程。不能准确归属则单列未知。不能把预计消耗当实测，也不换算未经核验的人民币价格。
+新批中文报告给出冻结2900、完成数及各状态、首次通过/2900、最终通过/2900、修订题数及修订新增通过、失败分类、四阶段和预检实际用量、每道原题和每份通过版平均成本（包含失败成本）；通过为0时每份成本未定义。未取得全部终态须标部分完成。与历史100及1000题分别比较Luna每题/每通过版成本，主调度单列。说明样本、程序、来源和prompt差异；审查通过率不等于人工准确率。
+累计中文报告分别列历史100、新增1000、本次2900及合计；三个冻结集合总共4000个唯一task_id，任意两批交集为0。只有本次2900题全部取得终态才能称累计完成4000题。累计通过为994加本次通过数，失败分类分批列出；累计Luna实测为110,985,895加本次去重实测，主调度与未知用量单列。其他早期模型实验不纳入本系列。
+最终交付本批manifest及修订链、原题和来源、全部阶段原始响应、逐题结果、通过版rubric、全部失败记录、实际usage明细、中文报告，以及同一目录中的batches/tasks/events登记、README和累计报告。核对manifest、索引、终态、产物、usage一致；历史原始产物保留原路径。
+长任务使用持久化进程和runner队列，终态、调用失败或模型不可用都据实记录；连续基础设施调用失败时暂停新派发并保留剩余占位，不能把整批未调用题记作业务失败。汇报启动成功不能说已全部完成。
+完成后停止，不追加题、不重跑历史失败、不追加修订轮次、不要求主调度语义复核。
+
+九、可复现执行命令
+离线准备：
+agent-world-model/.venv/bin/python scripts/rubric_luna_batch02.py prepare --run-dir runs/rubric_luna_high_2900_batch02 --sample-size 2900 --seed 20261025 --startup-prompt configs/rubric/luna_high_2900/run_2900.txt
+执行或断点恢复（原参数）：
+agent-world-model/.venv/bin/python scripts/rubric_luna_batch02.py run --run-dir runs/rubric_luna_high_2900_batch02 --sample-size 2900 --seed 20261025 --startup-prompt configs/rubric/luna_high_2900/run_2900.txt --workers 3
+只读进度入口：runs/rubric_luna_high_2900_batch02/progress.json；完成入口：completion.json；统一累计入口：runs/rubric_luna_registry/report_zh.md。

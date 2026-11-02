@@ -1,0 +1,21 @@
+{
+  "status": "prompts_prepared_not_run",
+  "model": "gpt-5.6-luna",
+  "reasoning_effort": "high",
+  "pilot_size": 100,
+  "max_revisions": 1,
+  "user_context_cap": null,
+  "original_generation_protocol_retained": true,
+  "original_judge_protocol_unchanged": true,
+  "id_namespace_clarification_added": true,
+  "model_calls": 0,
+  "candidate_code_edge_fixes_pending": true,
+  "sha256": {
+    "execute.txt": "b6d9665de447d1dd802d9e94cf889a5f2126f381784744c1e217e5455afe2517",
+    "generate.txt": "9c04170468dacb1a629bd8342506205c95c20457ff63f596af6937ce4622d2bd",
+    "id_rules.txt": "2b08dc624780ce9d38fd0120748cbe73cc174d77e854f740e3a616c31122b242",
+    "judge.txt": "f83e2b3eea9f1a3182d60bee0fe24fa399ef973b6dbf8952956cf37e503f947f",
+    "revise.txt": "ba5dfe6dbcdef0fd0c7fa304a1a21b35cc61ecc01c8e7b4ed9f33f1774f31ad9",
+    "run_100.txt": "448ead2f59c2a5bb4c515ecfc43f0574f98740df76025bbd715ec650c84f1082"
+  }
+}
